@@ -2,17 +2,14 @@ import streamlit as st
 from openai import OpenAI
 from PIL import Image
 import base64
-import io
 
 st.set_page_config(page_title="AI Sales Suite Online", layout="wide")
 
 st.title("AI Sales Suite Online")
 st.caption("Tool tạo content bán hàng từ ảnh sản phẩm")
 
-# ===== API KEY =====
 api_key = st.text_input("Nhập OpenAI API Key", type="password")
 
-# ===== SIDEBAR =====
 st.sidebar.header("Chức năng")
 mode = st.sidebar.radio(
     "Chọn chức năng",
@@ -20,34 +17,37 @@ mode = st.sidebar.radio(
         "Tạo caption Facebook",
         "Phân tích ảnh sản phẩm",
         "Gợi ý prompt tạo ảnh",
-        "Mô tả sản phẩm"
-    ]
+        "Mô tả sản phẩm",
+    ],
 )
 
 uploaded_file = st.file_uploader("Tải ảnh sản phẩm lên", type=["jpg", "jpeg", "png"])
 
 extra_info = st.text_area(
     "Thông tin thêm",
-    placeholder="Ví dụ: sản phẩm dành cho mẹ và bé, phong cách cao cấp, giá mềm..."
+    placeholder="Ví dụ: sản phẩm dành cho mẹ và bé, phong cách cao cấp, giá mềm...",
 )
 
-def encode_image_to_base64(image_bytes):
+def encode_image_to_base64(image_bytes: bytes) -> str:
     return base64.b64encode(image_bytes).decode("utf-8")
 
-if uploaded_file:
+image_bytes = None
+mime_type = "image/png"
+
+if uploaded_file is not None:
+    image_bytes = uploaded_file.getvalue()
+    mime_type = uploaded_file.type or "image/png"
     image = Image.open(uploaded_file)
     st.image(image, caption="Ảnh sản phẩm", use_container_width=True)
 
 if st.button("Tạo nội dung"):
     if not api_key:
         st.error("Bạn cần nhập OpenAI API Key trước.")
-    elif not uploaded_file:
+    elif image_bytes is None:
         st.error("Bạn cần tải ảnh lên trước.")
     else:
         try:
             client = OpenAI(api_key=api_key)
-
-            image_bytes = uploaded_file.read()
             base64_image = encode_image_to_base64(image_bytes)
 
             if mode == "Tạo caption Facebook":
@@ -58,7 +58,6 @@ Hãy xem ảnh sản phẩm và viết:
 3. 1 đoạn CTA chốt đơn
 Thông tin thêm: {extra_info}
 """
-
             elif mode == "Phân tích ảnh sản phẩm":
                 user_prompt = f"""
 Hãy phân tích ảnh sản phẩm này:
@@ -68,7 +67,6 @@ Hãy phân tích ảnh sản phẩm này:
 4. Gợi ý cách đăng bài bán hàng
 Thông tin thêm: {extra_info}
 """
-
             elif mode == "Gợi ý prompt tạo ảnh":
                 user_prompt = f"""
 Dựa vào ảnh sản phẩm, hãy viết:
@@ -78,7 +76,6 @@ Dựa vào ảnh sản phẩm, hãy viết:
 Viết rõ, dễ copy dùng ngay.
 Thông tin thêm: {extra_info}
 """
-
             else:
                 user_prompt = f"""
 Hãy tạo mô tả sản phẩm từ ảnh này:
@@ -99,7 +96,7 @@ Thông tin thêm: {extra_info}
                             {
                                 "type": "image_url",
                                 "image_url": {
-                                    "url": f"data:image/png;base64,{base64_image}"
+                                    "url": f"data:{mime_type};base64,{base64_image}"
                                 },
                             },
                         ],
