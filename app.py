@@ -21,8 +21,8 @@ df = load_products()
 # =========================
 # HEADER
 # =========================
-st.title("🛍️ Affiliate AI Hub Ban Hang")
-st.caption("Trang giới thiệu sản phẩm affiliate + tạo caption bán hàng cho Facebook và TikTok")
+st.title("🛍️ Affiliate AI Hub Ban Hang Mai Mit")
+st.caption("Trang giới thiệu sản phẩm affiliate + tạo caption bán hàng cho Facebook và TikTok cho Mai Mit")
 
 # =========================
 # SIDEBAR
