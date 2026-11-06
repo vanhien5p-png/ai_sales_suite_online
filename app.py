@@ -18,6 +18,14 @@ def load_products():
 
 df = load_products()
 
+
+def format_price(value):
+    """Hien thi gia dang 499.000 đ; giu nguyen so trong products.csv."""
+    try:
+        return f"{int(float(value)):,}".replace(",", ".") + " đ"
+    except (TypeError, ValueError):
+        return str(value)
+
 # =========================
 # HEADER
 # =========================
@@ -77,7 +85,7 @@ if pages == "Danh sách sản phẩm":
             with c2:
                 st.subheader(str(row["name"]))
                 st.write(f"**Danh mục:** {row['category']}")
-                st.write(f"**Giá:** {row['price']}")
+                st.write(f"**Giá:** {format_price(row['price'])}")
                 st.write(str(row["description"]))
 
                 advantages = str(row.get("advantages", "")).strip()
@@ -140,7 +148,7 @@ elif pages == "AI tạo caption bán hàng":
     st.markdown("### Thông tin sản phẩm đang chọn")
     st.write(f"**Tên sản phẩm:** {product_row['name']}")
     st.write(f"**Danh mục:** {product_row['category']}")
-    st.write(f"**Giá:** {product_row['price']}")
+    st.write(f"**Giá:** {format_price(product_row['price'])}")
     st.write(f"**Mô tả:** {product_row['description']}")
 
     if st.button("Tạo caption bán hàng"):
