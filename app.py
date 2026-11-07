@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from openai import OpenAI
 from datetime import datetime
+import os
 
 st.set_page_config(
     page_title="Affiliate AI Hub Ban Hang",
@@ -32,6 +33,41 @@ def save_products(dataframe):
     dataframe.to_csv("products.csv", index=False)
     st.cache_data.clear()
 
+
+# =========================
+# CAPTION HISTORY
+# =========================
+HISTORY_FILE = "caption_history.csv"
+HISTORY_COLUMNS = ["time", "product", "platform", "tone", "content"]
+
+
+def load_history():
+    """Doc lich su caption tu file CSV; tra ve DataFrame rong neu chua co."""
+    if os.path.exists(HISTORY_FILE):
+        try:
+            hist = pd.read_csv(HISTORY_FILE).fillna("")
+        except Exception:
+            return pd.DataFrame(columns=HISTORY_COLUMNS)
+        for col in HISTORY_COLUMNS:
+            if col not in hist.columns:
+                hist[col] = ""
+        return hist[HISTORY_COLUMNS]
+    return pd.DataFrame(columns=HISTORY_COLUMNS)
+
+
+def save_caption_to_history(product, platform, tone, content):
+    """Them mot caption vua tao vao file lich su."""
+    entry = {
+        "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "product": product,
+        "platform": platform,
+        "tone": tone,
+        "content": content,
+    }
+    hist = load_history()
+    hist = pd.concat([hist, pd.DataFrame([entry])], ignore_index=True)
+    hist.to_csv(HISTORY_FILE, index=False)
+
 # =========================
 # HEADER
 # =========================
@@ -47,7 +83,7 @@ api_key = st.sidebar.text_input("Nhập OpenAI API Key", type="password")
 
 pages = st.sidebar.radio(
     "Chọn trang",
-    ["Danh sách sản phẩm", "AI tạo caption bán hàng", "Quản lý sản phẩm"]
+    ["Danh sách sản phẩm", "AI tạo caption bán hàng", "Quản lý sản phẩm", "Lịch sử caption"]
 )
 
 # =========================
@@ -205,19 +241,28 @@ Viết dễ dùng ngay, thực tế, tập trung chốt đơn.
 
                 result = response.choices[0].message.content
 
-                st.success("Đã tạo xong nội dung.")
-                st.markdown("## Kết quả")
-                st.write(result)
-
-                st.download_button(
-                    label="📥 Tải nội dung .txt",
-                    data=result,
-                    file_name=f"caption_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
-                    mime="text/plain"
+                save_caption_to_history(
+                    product_row['name'], platform, tone, result
                 )
+                st.session_state["last_caption"] = result
+                st.session_state["last_caption_product"] = str(product_row['name'])
+
+                st.success("Đã tạo xong nội dung và lưu vào Lịch sử caption.")
 
             except Exception as e:
                 st.error(f"Lỗi: {e}")
+
+    if st.session_state.get("last_caption"):
+        st.markdown("## Kết quả gần nhất")
+        st.caption(f"Sản phẩm: {st.session_state.get('last_caption_product', '')}")
+        st.write(st.session_state["last_caption"])
+        st.download_button(
+            label="📥 Tải nội dung .txt",
+            data=st.session_state["last_caption"],
+            file_name=f"caption_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
+            mime="text/plain",
+            key="download_last_caption",
+        )
 
 # =========================
 # PAGE 3: PRODUCT MANAGEMENT
@@ -370,3 +415,49 @@ elif pages == "Quản lý sản phẩm":
                 save_products(remaining.reset_index(drop=True))
                 st.success(f"Đã xóa sản phẩm: {delete_selected}")
                 st.rerun()
+
+# =========================
+# PAGE 4: CAPTION HISTORY
+# =========================
+elif pages == "Lịch sử caption":
+    st.subheader("Lịch sử caption đã tạo")
+    st.caption(
+        "Caption được lưu trên máy đang chạy app. Với bản chạy online, "
+        "lịch sử có thể mất khi app khởi động lại — hãy tải file .txt về để giữ lâu dài."
+    )
+
+    history = load_history()
+
+    if history.empty:
+        st.info("Chưa có caption nào được lưu. Hãy sang trang 'AI tạo caption bán hàng' để tạo caption đầu tiên.")
+    else:
+        st.write(f"Đã lưu: **{len(history)}** caption (mới nhất ở trên)")
+
+        for idx in reversed(history.index.tolist()):
+            row = history.loc[idx]
+            label = f"{row['time']} — {row['product']} ({row['platform']})"
+            with st.expander(label):
+                st.write(f"**Giọng văn:** {row['tone']}")
+                st.markdown(str(row["content"]))
+                dl_col, del_col = st.columns([1, 1])
+                with dl_col:
+                    st.download_button(
+                        label="📥 Tải .txt",
+                        data=str(row["content"]),
+                        file_name=f"caption_{str(row['time']).replace(':', '').replace(' ', '_').replace('-', '')}.txt",
+                        mime="text/plain",
+                        key=f"download_history_{idx}",
+                    )
+                with del_col:
+                    if st.button("🗑️ Xóa caption này", key=f"delete_history_{idx}"):
+                        history = history.drop(index=idx).reset_index(drop=True)
+                        history.to_csv(HISTORY_FILE, index=False)
+                        st.rerun()
+
+        st.divider()
+        confirm_clear = st.checkbox("Tôi chắc chắn muốn xóa toàn bộ lịch sử caption")
+        if st.button("Xóa toàn bộ lịch sử", disabled=not confirm_clear):
+            if os.path.exists(HISTORY_FILE):
+                os.remove(HISTORY_FILE)
+            st.success("Đã xóa toàn bộ lịch sử caption.")
+            st.rerun()

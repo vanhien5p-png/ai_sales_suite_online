@@ -19,6 +19,15 @@ Web app Streamlit hỗ trợ bán hàng affiliate: trưng bày danh sách sản 
   6. 3 ý tưởng video ngắn cho TikTok/Reels
 - Tải kết quả về dạng file `.txt`.
 
+### 3. Quản lý sản phẩm
+- Thêm, sửa, xóa sản phẩm ngay trên giao diện web; dữ liệu lưu thẳng vào `products.csv`, không cần sửa file bằng tay.
+- Chặn tên trống/tên trùng; không cho xóa khi danh sách chỉ còn 1 sản phẩm.
+
+### 4. Lịch sử caption
+- Mỗi caption tạo thành công được tự động lưu kèm tên sản phẩm, nền tảng, giọng văn và thời gian tạo vào file `caption_history.csv`.
+- Xem lại, tải lại từng caption dạng `.txt`, xóa từng mục hoặc xóa toàn bộ lịch sử.
+- Lưu ý: lịch sử lưu trên máy đang chạy app; với bản deploy online, lịch sử có thể mất khi app khởi động lại — nên tải `.txt` về để giữ lâu dài. File này đã được đưa vào `.gitignore`, không commit lên GitHub.
+
 ## Cấu trúc thư mục
 
 ```
