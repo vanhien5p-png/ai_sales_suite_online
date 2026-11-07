@@ -164,7 +164,7 @@ Bạn là chuyên gia content bán hàng online cho Facebook và TikTok.
 Hãy viết nội dung bán hàng bằng tiếng Việt cho sản phẩm sau:
 - Tên sản phẩm: {product_row['name']}
 - Danh mục: {product_row['category']}
-- Giá: {product_row['price']}
+- Giá: {format_price(product_row['price'])}
 - Mô tả: {product_row['description']}
 - Ưu điểm: {product_row.get('advantages', '')}
 
